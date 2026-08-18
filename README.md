@@ -50,6 +50,25 @@ host 侧新增 `GET /dsh-provider-order/providers` 供映射。
 - `drop` 移动行时兼容行带 wrapper 的 DOM 结构，不再假定行是列表直接子元素。
 - providers 接口暂时失败时也照常绑定拖拽事件（保存映射失败只告警不阻塞拖动）。
 
+## 新增功能（v0.2.0）
+
+### 设置面板导航栏自动滚动
+
+问题：当安装大量插件后，设置页左侧导航栏（通用设置、模型、插件、Agent 预设、记忆系统、对话管理、快照、插件市场、文件拖入、文件提及、通知、自定义提示词、WSL 后端、第三方模型思考、归档对话管理、侧边临时会话、Skill 调度器等）会超出容器高度，但无法下滑查看。
+
+修复：`lib/client.js` 新增 `setupSettingsScroll()` 函数，通过 MutationObserver 动态检测：
+
+1. **自动检测**：读取 `.nav` 容器的实际高度（`getComputedStyle`）和内容高度（`scrollHeight`）
+2. **自动适配**：当内容高度 > 容器高度时，自动设置 `maxHeight` + `overflow-y: auto` + `scrollbar-gutter: stable`
+3. **实时响应**：每次 DOM 变化（插件安装/卸载/设置项增删）后重新检测，确保滚动状态始终正确
+4. **智能回退**：内容未溢出时自动移除 `maxHeight` 限制，保持原始布局
+
+CSS 规则（已注入）：
+```css
+[data-plugin="settings"] .nav { overflow-y: auto; scrollbar-gutter: stable }
+[data-plugin="settings"] .navList { flex: 1; min-height: 0; overflow-y: auto }
+```
+
 ## 已知限制
 
 1. `llm.providers` 视图固定为「directory 条目先、无 settingsNs 的 live provider 追加尾部」。
