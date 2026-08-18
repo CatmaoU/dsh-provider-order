@@ -58,15 +58,15 @@ host 侧新增 `GET /dsh-provider-order/providers` 供映射。
 
 修复：`lib/client.js` 新增 `setupSettingsScroll()` 函数，通过 MutationObserver 动态检测：
 
-1. **自动检测**：读取 `.nav` 容器的实际高度（`getComputedStyle`）和内容高度（`scrollHeight`）
-2. **自动适配**：当内容高度 > 容器高度时，自动设置 `maxHeight` + `overflow-y: auto` + `scrollbar-gutter: stable`
+1. **自动检测**：读取设置面板导航容器的 `clientHeight` 和 `scrollHeight`
+2. **自动适配**：当内容高度 > 容器高度时，自动设置 `overflow-y: auto` + `scrollbar-gutter: stable`
 3. **实时响应**：每次 DOM 变化（插件安装/卸载/设置项增删）后重新检测，确保滚动状态始终正确
-4. **智能回退**：内容未溢出时自动移除 `maxHeight` 限制，保持原始布局
+4. **智能回退**：内容未溢出时保持默认布局，不显示滚动条
 
-CSS 规则（已注入）：
+CSS 规则（已注入，使用 CSS module 稳定后缀匹配，不依赖 `data-plugin="settings"`）：
 ```css
-[data-plugin="settings"] .nav { overflow-y: auto; scrollbar-gutter: stable }
-[data-plugin="settings"] .navList { flex: 1; min-height: 0; overflow-y: auto }
+[class*="_panel"] > [class*="_nav"] { overflow-y: auto; overflow-x: hidden; min-height: 0; scrollbar-gutter: stable }
+[class*="_panel"] > [class*="_nav"] [class*="_navList"] { min-height: 0 }
 ```
 
 ## 已知限制
