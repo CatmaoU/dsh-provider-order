@@ -5,7 +5,7 @@
 ## 原理
 
 - 设置→模型列表 与 模型选择器 的数据最终都来自 host 服务 `llm`（LlmRuntime）的两个公开 Map：`ctx.llm.adapters` 与 `ctx.llm.directory`（key 均为 provider id）。
-- 本插件 **自带行内拖拽 UI**（self-contained runtime 增强，不修改任何核心 bundle 文件）：client 半用 MutationObserver 找到设置页模型商行列表（`ul[class*="_rows"]`，CSS module 哈希变化免疫），对其开启原生 HTML5 拖拽；交互元素（输入框/按钮/下拉）上不会误触发。
+- 本插件 **自带行内拖拽 UI**（self-contained runtime 增强，不修改任何核心 bundle 文件）：client 半用 MutationObserver 找到设置页模型商行列表（`[class*="_rows"]`，CSS module 哈希变化免疫，不限定 `ul/li` 标签），对其开启原生 HTML5 拖拽；交互元素（输入框/按钮/下拉）上不会误触发。
 - 释放后把新行序映射回 provider id（`GET /dsh-provider-order/providers`，host 侧新增路由，返回与设置页渲染顺序一致的全量列表，按 displayName 匹配），再 `PUT /dsh-provider-order/order` 持久化到 settings 命名空间 `provider-order.order: string[]`（`~/.dsh/settings.yaml`）。
 - host 侧监听该命名空间变更 → 按序重排两个 Map 的插入顺序 → 广播 `llm/adapters-updated` → 两个 UI 同时刷新为新顺序。
 - 重启后自动恢复：插件 apply 时读取已存顺序并重排（`llm/adapters-updated` 事件兜底）。
@@ -33,6 +33,22 @@ host 侧新增 `GET /dsh-provider-order/providers` 供映射。
 修复：每次 `refresh()` 遇到设置页模型商行列表时，先对所有
 `li[class*="_rowCard"]` 设置 `row.draggable = true`（不依赖 providers 接口
 成功/快慢），React 重建 li 后也会被重新标记。
+
+### 补充 2（2026-08-18 三次修复）
+
+仍有“无法拖动”反馈：光标已是 grab，但没有拖影、滑动会选中文字。
+这说明 CSS 已命中行（`[class*="_rowCard"]`），但 JS 里选择器仍写死
+`li[class*="_rowCard"]`，而实际行元素可能是 `div` 等非 `li` 标签，
+导致 `draggable` 从未设置到真正的行上。
+
+修复：
+
+- 列表/行选择器全部改为不限定标签：
+  `[class*="_rows"]` / `[class*="_rowCard"]` / `[class*="_rowName"]`。
+- `mousedown`/`pointerdown` 时强制给目标行设置 `draggable=true`，
+  对抗 React 重渲染把 `draggable` 重置回 `false`。
+- `drop` 移动行时兼容行带 wrapper 的 DOM 结构，不再假定行是列表直接子元素。
+- providers 接口暂时失败时也照常绑定拖拽事件（保存映射失败只告警不阻塞拖动）。
 
 ## 已知限制
 
