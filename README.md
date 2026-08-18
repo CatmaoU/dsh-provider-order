@@ -24,6 +24,16 @@ DSH Desktop 升级/运行源变化而失效——patch 打在 `D:\dsh\resources\
 修复：拖拽 UI 整体移入本插件自身（`lib/client.js` runtime 增强），升级免疫；
 host 侧新增 `GET /dsh-provider-order/providers` 供映射。
 
+### 补充（2026-08-18 二次修复）
+
+首次修好后“行仍然完全无法拖动”：`lib/client.js` 只绑定了
+`dragstart`/`dragover`/`drop` 等事件，却没有给行设置 HTML5 拖拽必需的
+`draggable="true"`，因此 `dragstart` 根本不会触发。
+
+修复：每次 `refresh()` 遇到设置页模型商行列表时，先对所有
+`li[class*="_rowCard"]` 设置 `row.draggable = true`（不依赖 providers 接口
+成功/快慢），React 重建 li 后也会被重新标记。
+
 ## 已知限制
 
 1. `llm.providers` 视图固定为「directory 条目先、无 settingsNs 的 live provider 追加尾部」。
